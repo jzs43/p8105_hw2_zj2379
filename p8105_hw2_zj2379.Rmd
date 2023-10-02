@@ -10,6 +10,17 @@ First, clean the data in pols-month.csv. Use separate() to break up the variable
 library(tidyverse)
 ```
 
+```{r}
+month_df = 
+  tibble(
+    month_num = 1:12,
+    month_abb = month.abb,
+    month = month.name
+  )
+
+month_df
+```
+
 Clean the data in pols-month.csv
 ```{r}
 pols=
@@ -18,7 +29,8 @@ pols=
   separate(mon,into=c("year","month","day"),sep="-") %>% 
   mutate_at(vars(year, month, day), as.numeric) %>% 
   mutate(month=recode(month, '01'="January" , '02'="February",'03'="March",'04'="April","05"="May","06"="June","07"="July","08"="August","09"="Septemer","10"="October","11"="November","12"="December")) %>% 
-   mutate(president = recode(prez_gop, "0" = "dem", "1" = "gop", "2" = "gop")) %>% 
+   mutate(president = recode(prez_gop, "0" = "dem", "1" = "gop", "2" = "gop")) |>
+  left_join(x = _, y = month_df) %>% 
   select(year, month, everything(), -day, -starts_with("prez"))
 
 pols
@@ -38,16 +50,29 @@ snp
 
 Third, tidy the unemployment data so that it can be merged with the previous datasets. This process will involve switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring that key variables take the same values.
 
-```{r}
+```{r clean_538_unemp}
 unemployment = 
-  read_csv("./data/fivethirtyeight_datasets/unemployment.csv") %>% 
-  rename(year = Year) %>% 
+  read_csv("./data/fivethirtyeight_datasets/unemployment.csv") %>%
+   rename(year = Year) %>% 
   pivot_longer(
     Jan:Dec, 
     names_to = "month_abb",
     values_to = "unemployment"
-  ) %>% 
+  ) |> 
   left_join(x = _, y = month_df) %>% 
   select(year, month, unemployment)
+unemployment
 ```
+Join the datasets by merging snp into pols, and merging unemployment into the result.
+```{r merge_538}
+data_538 = 
+  left_join(pols, snp)|>
+  left_join(x = _, y = unemployment)
+
+str(data_538)
+```
+
+
+
+
 

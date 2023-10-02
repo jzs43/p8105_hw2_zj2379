@@ -19,10 +19,21 @@ plots_month_df=
   mutate_at(vars(year, month, day), as.numeric) %>% 
   mutate(month=recode(month, '01'="January" , '02'="February",'03'="March",'04'="April","05"="May","06"="June","07"="July","08"="August","09"="Septemer","10"="October","11"="November","12"="December")) %>% 
    mutate(president = recode(prez_gop, "0" = "dem", "1" = "gop", "2" = "gop")) %>% 
-  select(year, month, everything(), -day, -starts_with("prez")) 
-
+  select(year, month, everything(), -day, -starts_with("prez"))
 
 plots_month_df
+```
+Second, clean the data in snp.csv using a similar process to the above. For consistency across datasets, arrange according to year and month, and organize so that year and month are the leading columns.
+
+```{r}
+snp = 
+  read_csv("./data/fivethirtyeight_datasets/snp.csv") %>% 
+  janitor::clean_names() %>% 
+  separate(date, into = c("month", "day", "year"), convert = TRUE) %>% 
+  arrange(year, month) %>% 
+  mutate(month = month.name[month]) %>% 
+  select(year, month, close) 
+snp
 ```
 
 

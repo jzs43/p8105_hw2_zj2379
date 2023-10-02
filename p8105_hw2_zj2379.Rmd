@@ -73,12 +73,79 @@ library(readxl)
 
 ```{r}
 mrtrashweel=
-   read_excel("./data/202207 Trash Wheel Collection Data.xlsx") %>%
+  #read the Mr. Trash Wheel sheet
+   read_excel("./data/202207 Trash Wheel Collection Data.xlsx", sheet="Mr. Trash Wheel") %>%
+  #clean the dataset and filter out missing values
   janitor::clean_names() %>%filter(if_any(everything(), ~ !is.na(.)))%>%
-  mutate(homes_powered=(500*weight_tons)/30) %>% 
-  mutate(homes_powered=trunc(homes_powered))
+  #update the homes_powered values
+  mutate(homes_powered=(500*weight_tons)/30) %>%  
+  #remove desimal points from homes_powered values
+  mutate(homes_powered=trunc(homes_powered)) %>% 
+  #remove some columns
+  select(-x15,-x16) %>% 
+  #convert year from character to numeric variable
+  mutate_at(vars(year), as.numeric)
 
 
 mrtrashweel
 ```
+
+Use a similar process to import, clean, and organize the data for Professor Trash Wheel and Gwynnda, and combine these with the Mr. Trash Wheel dataset to produce a single tidy dataset. To keep track of which Trash Wheel is which, you may need to add an additional variable to all datasets before combining.
+```{r}
+gwynndatrashweel=
+  #read the Gwynnda Trash Wheel sheet
+   read_excel("./data/202207 Trash Wheel Collection Data.xlsx", sheet="Gwynnda Trash Wheel") %>% 
+  #clean the dataset and filter out missing values
+  janitor::clean_names() %>%filter(if_any(everything(), ~ !is.na(.))) %>% 
+  #update the homes_powered values
+  mutate(homes_powered=(500*weight_tons)/30) %>%  
+  #remove desimal points from homes_powered values
+  mutate(homes_powered=trunc(homes_powered))
+
+gwynndatrashweel
+```
+```{r}
+professortrashweel=
+  #read the Professor Trash Wheel sheet
+   read_excel("./data/202207 Trash Wheel Collection Data.xlsx", sheet="Professor Trash Wheel") %>% 
+  #clean the dataset and filter out missing values
+  janitor::clean_names() %>%filter(if_any(everything(), ~ !is.na(.))) %>% 
+  #update the homes_powered values
+  mutate(homes_powered=(500*weight_tons)/30) %>%  
+  #remove desimal points from homes_powered values
+  mutate(homes_powered=trunc(homes_powered))
+
+professortrashweel
+```
+
+
+```{r}
+#merge three datasets
+data_combine = 
+  left_join(mrtrashweel,professortrashweel)|>
+  left_join(x = _, y = gwynndatrashweel)
+data_combine
+```
+
+
+Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in the resulting dataset, and give examples of key variables. For available data, what was the total weight of trash collected by Professor Trash Wheel? What was the total number of cigarette butts collected by Gwynnda in July of 2021?
+
+```{r}
+#create a sub-dataset from gwynndajuly only have the observations from july
+gwynndajuly <- filter(gwynndatrashweel, month == "July")
+#calculate the sum of igarette_butts
+sum(gwynndajuly$cigarette_butts) 
+```
+
+The `mrtrashweel` data has `r nrow(mrtrashweel)` obervations and `r ncol(mrtrashweel)` variables and tells us about the weight of different types of trash for a given year from years 2014 to 2022 to power the number of homes ranging from `r range(mrtrashweel$homes_powered)[1]` to `r range(mrtrashweel$homes_powered)[2]`. 
+
+The `professortrashweel` data has `r nrow(professortrashweel)` obervations and `r ncol(professortrashweel)` variables and tells us about the weight of different types of trash for a given year from years 2017 to 2022 to power the number of homes ranging from `r range(professortrashweel$homes_powered)[1]` to `r range(professortrashweel$homes_powered)[2]`. 
+
+The `gwynndatrashweel` data has `r nrow(gwynndatrashweel)` obervations and `r ncol(gwynndatrashweel)` variables and tells us about the weight of different types of trash for a given year from years 2021 to 2022 to power the number of homes ranging from `r range(gwynndatrashweel$homes_powered)[1]` to `r range(gwynndatrashweel$homes_powered)[2]`. 
+
+The `data_combine` data has `r nrow(data_combine)` obervations and `r ncol(data_combine)` variables and tells us about the weight of different types of trash for a given year from years 2014 to 2022 to power the number of homes ranging from `r range(data_combine$homes_powered)[1]` to `r range(data_combine$homes_powered)[2]`. 
+
+The total weight of trash collected by Professor Trash Wheel is `r sum(professortrashweel$weight_tons)`tons and the total number of cigarette butts collected by Gwynnda in July of 2021 is `r sum(gwynndajuly$cigarette_butts)`.
+
+
 

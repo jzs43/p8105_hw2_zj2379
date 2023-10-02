@@ -65,7 +65,20 @@ data_538 =
   left_join(x = _, y = unemployment)
 ```
 
+## problem 2
+
+```{r}
+library(readxl)
+```
+
+```{r}
+mrtrashweel=
+   read_excel("./data/202207 Trash Wheel Collection Data.xlsx") %>%
+  janitor::clean_names() %>%filter(if_any(everything(), ~ !is.na(.)))%>%
+  mutate(homes_powered=(500*weight_tons)/30) %>% 
+  mutate(homes_powered=trunc(homes_powered))
 
 
-
+mrtrashweel
+```
 

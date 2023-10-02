@@ -17,7 +17,9 @@ plots_month_df=
   janitor::clean_names() %>% 
   separate(mon,into=c("year","month","day"),sep="-") %>% 
   mutate_at(vars(year, month, day), as.numeric) %>% 
-  mutate(month=recode(month, '01'="January" , '02'="February",'03'="March",'04'="April","05"="May","06"="June","07"="July","08"="August","09"="Septemer","10"="October","11"="November","12"="December"))
+  mutate(month=recode(month, '01'="January" , '02'="February",'03'="March",'04'="April","05"="May","06"="June","07"="July","08"="August","09"="Septemer","10"="October","11"="November","12"="December")) %>% 
+   mutate(president = recode(prez_gop, "0" = "dem", "1" = "gop", "2" = "gop")) %>% 
+  select(year, month, everything(), -day, -starts_with("prez")) 
 
 
 plots_month_df

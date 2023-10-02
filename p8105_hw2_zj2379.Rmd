@@ -5,3 +5,22 @@ date: "2023-10-02"
 output: github_document
 ---
 
+First, clean the data in pols-month.csv. Use separate() to break up the variable mon into integer variables year, month, and day; replace month number with month name; create a president variable taking values gop and dem, and remove prez_dem and prez_gop; and remove the day variable.
+```{r}
+library(tidyverse)
+```
+
+Clean the data in pols-month.csv
+```{r}
+plots_month_df=
+  read_csv("./data/fivethirtyeight_datasets/pols-month.csv",show_col_types = FALSE) %>%
+  janitor::clean_names() %>% 
+  separate(mon,into=c("year","month","day"),sep="-") %>% 
+  mutate_at(vars(year, month, day), as.numeric) %>% 
+  mutate(month=recode(month, '01'="January" , '02'="February",'03'="March",'04'="April","05"="May","06"="June","07"="July","08"="August","09"="Septemer","10"="October","11"="November","12"="December"))
+
+
+plots_month_df
+```
+
+

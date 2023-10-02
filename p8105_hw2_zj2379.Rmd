@@ -76,7 +76,8 @@ mrtrashweel=
   #read the Mr. Trash Wheel sheet
    read_excel("./data/202207 Trash Wheel Collection Data.xlsx", sheet="Mr. Trash Wheel") %>%
   #clean the dataset and filter out missing values
-  janitor::clean_names() %>%filter(if_any(everything(), ~ !is.na(.)))%>%
+  janitor::clean_names() %>%
+  filter(if_any(everything(), ~ !is.na(.)))%>%
   #update the homes_powered values
   mutate(homes_powered=(500*weight_tons)/30) %>%  
   #remove desimal points from homes_powered values
@@ -146,6 +147,43 @@ The `gwynndatrashweel` data has `r nrow(gwynndatrashweel)` obervations and `r nc
 The `data_combine` data has `r nrow(data_combine)` obervations and `r ncol(data_combine)` variables and tells us about the weight of different types of trash for a given year from years 2014 to 2022 to power the number of homes ranging from `r range(data_combine$homes_powered)[1]` to `r range(data_combine$homes_powered)[2]`. 
 
 The total weight of trash collected by Professor Trash Wheel is `r sum(professortrashweel$weight_tons)`tons and the total number of cigarette butts collected by Gwynnda in July of 2021 is `r sum(gwynndajuly$cigarette_butts)`.
+
+## Problem 3
+
+Similarly, import, clean, and tidy the dataset of longitudinally observed biomarker values; comment on the steps on the import process and the features of the dataset.
+
+Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings. Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset; export the result as a CSV to your data directory.
+
+```{r}
+baseline=
+  #read and clean the data 
+  read_csv("./data/data_mci/MCI_baseline.csv") %>% 
+  janitor::clean_names() %>% 
+  #remove observations those do not meet the stated inclusion criteria 
+ filter(age_at_the_onset_of_mci_missing_if_a_subject_remains_mci_free_during_the_follow_up_period != ".") %>% 
+  # Ensure that sex and APOE4 carrier status are appropriate encoded
+  mutate(x1_male_0_female=recode(x1_male_0_female,'1'="male",'0'="female")) %>% 
+  mutate(x1_apoe4_carrier_0_apoe4_non_carrier=recode(x1_apoe4_carrier_0_apoe4_non_carrier,"1"="carrier","0"="non-carrier")) %>% 
+  #change the column name
+   rename("sex" = "x1_male_0_female",
+          "apoe4_status"="x1_apoe4_carrier_0_apoe4_non_carrier",
+          "age_at_the_onset_of_mci"="age_at_the_onset_of_mci_missing_if_a_subject_remains_mci_free_during_the_follow_up_period") %>%   rename("ID"="x1") %>% 
+  #convert age from char to num
+   mutate_at(vars(age_at_the_study_baseline), as.numeric) %>% 
+  #remove the first row
+  slice(-1)
+baseline
+```
+
+```{r}
+#calculate proportion of women in the study are APOE4 carriers 
+carrier <- filter(baseline, apoe4_status == "carrier")
+femaleproportion <- (nrow(filter(carrier, sex=="female")) / nrow(carrier))*100
+```
+
+I import the daseline dataset and clean it by removing observations without MCI records. There were originally 483 participants, `r nrow(baseline)` of them have developed MCI. The average baseline age is `r mean(baseline$age_at_the_study_baseline)`. `r femaleproportion`% of women in the study are APOE4 carriers.
+
+
 
 
 

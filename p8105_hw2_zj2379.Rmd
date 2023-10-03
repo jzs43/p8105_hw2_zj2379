@@ -183,7 +183,24 @@ femaleproportion <- (nrow(filter(carrier, sex=="female")) / nrow(carrier))*100
 
 I import the daseline dataset and clean it by removing observations without MCI records. There were originally 483 participants, `r nrow(baseline)` of them have developed MCI. The average baseline age is `r mean(baseline$age_at_the_study_baseline)`. `r femaleproportion`% of women in the study are APOE4 carriers.
 
+```{r}
+amyloid=
+  #read and clean the data 
+  read_csv("./data/data_mci/mci_amyloid.csv", na = c("Na", "NA", "N/A")) %>% 
+  janitor::clean_names() %>% 
+  slice(-1) %>% 
+  rename("time_since_baseline"="time_in_years_elapsed_since_the_study_baseline_to_the_visit_where_biomarker_amyloid_42_40_ratio_was_measured",
+         "ID"="study_id",
+         "time2"="na_3",
+         "time4"="na_4",
+         "time6"="na_5",
+         "time8"="na_6"
+  ) %>% 
+  #remove obs with NA values
+  na.omit(amyloid)
 
+amyloid
+```
 
-
+I first rename each column and remove observations with missing values. There were originally 496 individuals, while only `r nrow(amyloid)` of them have completed records.
 

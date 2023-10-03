@@ -204,3 +204,19 @@ amyloid
 
 I first rename each column and remove observations with missing values. There were originally 496 individuals, while only `r nrow(amyloid)` of them have completed records.
 
+```{r}
+# Find participants unique to the "baseline" dataset
+baseline_unique <- baseline %>%
+  anti_join(amyloid, by = "ID")
+nrow(baseline_unique)
+# Find participants unique to the "amyloid" dataset
+amyloid_unique <- amyloid %>%
+  anti_join(baseline, by = "ID")
+nrow(amyloid_unique)
+# Combine the datasets, retaining only participants common to both datasets
+combined_data2 <- inner_join(baseline, amyloid, by = "ID")
+nrow(combined_data2)
+```
+`r nrow(baseline_unique)` participants found unique to the baseline dataset and `r nrow(amyloid_unique)` participants found unique to the amyloid dataset. `r nrow(combined_data2)` appear in both datasets.
+
+

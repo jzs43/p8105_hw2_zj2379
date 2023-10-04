@@ -74,47 +74,47 @@ library(readxl)
 ```{r}
 mrtrashweel=
   #read the Mr. Trash Wheel sheet
-   read_excel("./data/202207 Trash Wheel Collection Data.xlsx", sheet="Mr. Trash Wheel") %>%
+   read_excel("./data/202309 Trash Wheel Collection Data.xlsx", sheet="Mr. Trash Wheel") %>%
   #clean the dataset and filter out missing values
   janitor::clean_names() %>%
   filter(if_any(everything(), ~ !is.na(.)))%>%
   #update the homes_powered values
   mutate(homes_powered=(500*weight_tons)/30) %>%  
-  #remove desimal points from homes_powered values
-  mutate(homes_powered=trunc(homes_powered)) %>% 
   #remove some columns
   select(-x15,-x16) %>% 
   #convert year from character to numeric variable
-  mutate_at(vars(year), as.numeric)
+  mutate_at(vars(year), as.numeric) %>% 
+  drop_na(dumpster) %>% 
+  add_column(type = "Mr. Trash")
 
 
 mrtrashweel
 ```
 
-Use a similar process to import, clean, and organize the data for Professor Trash Wheel and Gwynnda, and combine these with the Mr. Trash Wheel dataset to produce a single tidy dataset. To keep track of which Trash Wheel is which, you may need to add an additional variable to all datasets before combining.
 ```{r}
 gwynndatrashweel=
   #read the Gwynnda Trash Wheel sheet
-   read_excel("./data/202207 Trash Wheel Collection Data.xlsx", sheet="Gwynnda Trash Wheel") %>% 
+   read_excel("./data/202309 Trash Wheel Collection Data.xlsx", sheet="Gwynnda Trash Wheel") %>% 
   #clean the dataset and filter out missing values
   janitor::clean_names() %>%filter(if_any(everything(), ~ !is.na(.))) %>% 
   #update the homes_powered values
   mutate(homes_powered=(500*weight_tons)/30) %>%  
-  #remove desimal points from homes_powered values
-  mutate(homes_powered=trunc(homes_powered))
+  drop_na(dumpster) %>% 
+  add_column(type = "Gwynnda Trash") 
 
 gwynndatrashweel
 ```
+
 ```{r}
 professortrashweel=
   #read the Professor Trash Wheel sheet
-   read_excel("./data/202207 Trash Wheel Collection Data.xlsx", sheet="Professor Trash Wheel") %>% 
+   read_excel("./data/202309 Trash Wheel Collection Data.xlsx", sheet="Professor Trash Wheel") %>% 
   #clean the dataset and filter out missing values
   janitor::clean_names() %>%filter(if_any(everything(), ~ !is.na(.))) %>% 
   #update the homes_powered values
   mutate(homes_powered=(500*weight_tons)/30) %>%  
-  #remove desimal points from homes_powered values
-  mutate(homes_powered=trunc(homes_powered))
+  drop_na(dumpster) %>% 
+  add_column(type = "Professor Trash") 
 
 professortrashweel
 ```
@@ -123,20 +123,12 @@ professortrashweel
 ```{r}
 #merge three datasets
 data_combine = 
-  left_join(mrtrashweel,professortrashweel)|>
-  left_join(x = _, y = gwynndatrashweel)
-data_combine
+  bind_rows(mrtrashweel, professortrashweel) |>
+  bind_rows(x = _, y = gwynndatrashweel)
 ```
 
 
-Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in the resulting dataset, and give examples of key variables. For available data, what was the total weight of trash collected by Professor Trash Wheel? What was the total number of cigarette butts collected by Gwynnda in July of 2021?
-
-```{r}
-#create a sub-dataset from gwynndajuly only have the observations from july
-gwynndajuly <- filter(gwynndatrashweel, month == "July")
-#calculate the sum of igarette_butts
-sum(gwynndajuly$cigarette_butts) 
-```
+For each dataset, I clean the data, update the home_powered vlues, and add a new column.
 
 The `mrtrashweel` data has `r nrow(mrtrashweel)` obervations and `r ncol(mrtrashweel)` variables and tells us about the weight of different types of trash for a given year from years 2014 to 2022 to power the number of homes ranging from `r range(mrtrashweel$homes_powered)[1]` to `r range(mrtrashweel$homes_powered)[2]`. 
 
@@ -146,7 +138,7 @@ The `gwynndatrashweel` data has `r nrow(gwynndatrashweel)` obervations and `r nc
 
 The `data_combine` data has `r nrow(data_combine)` obervations and `r ncol(data_combine)` variables and tells us about the weight of different types of trash for a given year from years 2014 to 2022 to power the number of homes ranging from `r range(data_combine$homes_powered)[1]` to `r range(data_combine$homes_powered)[2]`. 
 
-The total weight of trash collected by Professor Trash Wheel is `r sum(professortrashweel$weight_tons)`tons and the total number of cigarette butts collected by Gwynnda in July of 2021 is `r sum(gwynndajuly$cigarette_butts)`.
+The total weight of trash collected by Professor Trash Wheel is `r sum(professortrashweel$weight_tons)`tons and the total number of cigarette butts collected by Gwynnda in July of 2021 is `r sum(filter(mrtrashweel, month == "July" & year == 2021)$cigarette_butts)`.
 
 ## Problem 3
 
@@ -156,65 +148,54 @@ Check whether some participants appear in only the baseline or amyloid datasets,
 
 ```{r}
 baseline=
-  #read and clean the data 
-  read_csv("./data/data_mci/MCI_baseline.csv") %>% 
+  read_csv("./data/data_mci/MCI_baseline.csv", skip = 1) %>% 
   janitor::clean_names() %>% 
+  mutate(
+    sex = recode(sex, "0" = "female", "1" = "male"),
+    apoe4 = recode(apoe4, "0" = "non-apoe4 carrier", "1" = "apoe4 carrier"),
+    age_at_onset = ifelse(age_at_onset == '.', NA, age_at_onset)
+  ) |>
+  filter(current_age < age_at_onset | is.na(age_at_onset)) 
+  #read and clean the data 
   #remove observations those do not meet the stated inclusion criteria 
- filter(age_at_the_onset_of_mci_missing_if_a_subject_remains_mci_free_during_the_follow_up_period != ".") %>% 
   # Ensure that sex and APOE4 carrier status are appropriate encoded
-  mutate(x1_male_0_female=recode(x1_male_0_female,'1'="male",'0'="female")) %>% 
-  mutate(x1_apoe4_carrier_0_apoe4_non_carrier=recode(x1_apoe4_carrier_0_apoe4_non_carrier,"1"="carrier","0"="non-carrier")) %>% 
   #change the column name
-   rename("sex" = "x1_male_0_female",
-          "apoe4_status"="x1_apoe4_carrier_0_apoe4_non_carrier",
-          "age_at_the_onset_of_mci"="age_at_the_onset_of_mci_missing_if_a_subject_remains_mci_free_during_the_follow_up_period") %>%   rename("ID"="x1") %>% 
   #convert age from char to num
-   mutate_at(vars(age_at_the_study_baseline), as.numeric) %>% 
   #remove the first row
-  slice(-1)
 baseline
 ```
 
-```{r}
-#calculate proportion of women in the study are APOE4 carriers 
-carrier <- filter(baseline, apoe4_status == "carrier")
-femaleproportion <- (nrow(filter(carrier, sex=="female")) / nrow(carrier))*100
-```
 
-I import the daseline dataset and clean it by removing observations without MCI records. There were originally 483 participants, `r nrow(baseline)` of them have developed MCI. The average baseline age is `r mean(baseline$age_at_the_study_baseline)`. `r femaleproportion`% of women in the study are APOE4 carriers.
+I import the daseline dataset and clean it by removing observations without MCI records and the first row. There were originally 483 participants, `r nrow(baseline)` of them have developed MCI. The average baseline age is `r mean(baseline$age_at_the_study_baseline)`. `r as.integer(count(filter(baseline, sex == "female" & apoe4 == "apoe4 carrier")))/as.integer(count(filter(baseline, sex == "female")))*100`% of women in the study are APOE4 carriers.
 
 ```{r}
-amyloid=
+amyloid = read_csv("./data/data_mci/mci_amyloid.csv", skip = 1) |>
+  janitor::clean_names() |>
+  rename(
+    id = study_id,
+    time_0 = baseline
+    ) |>
+  pivot_longer(
+    time_0:time_8, 
+    names_to = "timeperiod",
+    values_to = "time in years elapsed"
+  ) 
   #read and clean the data 
-  read_csv("./data/data_mci/mci_amyloid.csv", na = c("Na", "NA", "N/A")) %>% 
-  janitor::clean_names() %>% 
-  slice(-1) %>% 
-  rename("time_since_baseline"="time_in_years_elapsed_since_the_study_baseline_to_the_visit_where_biomarker_amyloid_42_40_ratio_was_measured",
-         "ID"="study_id",
-         "time2"="na_3",
-         "time4"="na_4",
-         "time6"="na_5",
-         "time8"="na_6"
-  ) %>% 
-  #remove obs with NA values
-  na.omit(amyloid)
 
 amyloid
 ```
 
-I first rename each column and remove observations with missing values. There were originally 496 individuals, while only `r nrow(amyloid)` of them have completed records.
+I import the amuloid.cvs data, remove the first row, rename two columns, and use pivot_longer to transpose data from wider to longer. 
 
 ```{r}
 # Find participants unique to the "baseline" dataset
-baseline_unique <- baseline %>%
-  anti_join(amyloid, by = "ID")
+baseline_unique=anti_join(baseline,amyloid)
 nrow(baseline_unique)
 # Find participants unique to the "amyloid" dataset
-amyloid_unique <- amyloid %>%
-  anti_join(baseline, by = "ID")
+amyloid_unique=anti_join(amyloid, baseline)
 nrow(amyloid_unique)
 # Combine the datasets, retaining only participants common to both datasets
-combined_data2 <- inner_join(baseline, amyloid, by = "ID")
+combined_data2 <- inner_join(baseline, amyloid, by = "id")
 nrow(combined_data2)
 ```
 `r nrow(baseline_unique)` participants found unique to the baseline dataset and `r nrow(amyloid_unique)` participants found unique to the amyloid dataset. `r nrow(combined_data2)` appear in both datasets.
